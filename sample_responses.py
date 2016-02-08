@@ -74,6 +74,57 @@ node = {
             "services": [
                 "kv"
             ]
+        },
+        {
+            "systemStats": {
+                "cpu_utilization_rate": 1.030927835051546,
+                "swap_total": 1477263360,
+                "swap_used": 158937088,
+                "mem_total": 2099998720,
+                "mem_free": 1236029440
+            },
+            "interestingStats": {
+                "cmd_get": 6.054490413723512,
+                "couch_docs_actual_disk_size": 72691786,
+                "couch_docs_data_size": 72658292,
+                "couch_spatial_data_size": 0,
+                "couch_spatial_disk_size": 0,
+                "couch_views_actual_disk_size": 0,
+                "couch_views_data_size": 0,
+                "curr_items": 6227,
+                "curr_items_tot": 6227,
+                "ep_bg_fetched": 0,
+                "get_hits": 1.009081735620585,
+                "mem_used": 77947496,
+                "ops": 6.054490413723512,
+                "vb_replica_curr_items": 0
+            },
+            "uptime": "3449",
+            "memoryTotal": 2099998720,
+            "memoryFree": 1236029440,
+            "mcdMemoryReserved": 1602,
+            "mcdMemoryAllocated": 1602,
+            "couchApiBase": "http://127.0.0.1:8092/",
+            "couchApiBaseHTTPS": "https://127.0.0.1:18092/",
+            "clusterMembership": "active",
+            "recoveryType": "none",
+            "status": "healthy",
+            "otpNode": "ns_1@127.0.0.1",
+            "thisNode": 'false',
+            "hostname": "127.0.0.2:8091",
+            "clusterCompatibility": 262145,
+            "version": "4.1.0-5005-enterprise",
+            "os": "x86_64-unknown-linux-gnu",
+            "ports": {
+                "sslProxy": 11214,
+                "httpsMgmt": 18091,
+                "httpsCAPI": 18092,
+                "proxy": 11211,
+                "direct": 11210
+            },
+            "services": [
+                "kv"
+            ]
         }
     ],
     "buckets": {
