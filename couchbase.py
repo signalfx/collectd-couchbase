@@ -222,7 +222,7 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
             if key == 'nodes':
                 metric_name_pref = 'nodes'
                 for node in obj:
-                    node_dim = dimensions
+                    node_dim = dict(dimensions)
                     host = node.get('hostname')
                     node_dim['node'] = host
                     metrics.extend(
