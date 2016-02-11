@@ -26,7 +26,6 @@ REQUEST_TYPE_BUCKET_STAT = "bucket_stat"
 
 # These are determined by the plugin config settings and are set by config()
 http_timeout = DEFAULT_API_TIMEOUT
-field_length = DEFAULT_FIELD_LENGTH
 
 CONFIGS = []
 
@@ -81,6 +80,7 @@ def config(config_values):
     username = None
     password = None
     api_urls = {}
+    field_length = DEFAULT_FIELD_LENGTH
 
     required_keys = ('CollectTarget', 'Host', 'Port')
     opt_keys = ('Interval', 'CollectMode')
@@ -104,6 +104,8 @@ def config(config_values):
         if val.key in bucket_specific_keys and val.key == 'Password' and \
                 val.values[0]:
             password = val.values[0]
+        if val.key == 'FieldLength' and val.values[0]:
+            field_length = int(val.values[0])
 
     # Make sure all required config settings are present, and log them
     collectd.info("Using config settings:")
@@ -127,8 +129,8 @@ def config(config_values):
     if username is None and password is None:
         username = password = ''
     collectd.info(
-                "Using username '%s' and password '%s' " % (
-                    username, password))
+            "Using username '%s' and password '%s' " % (
+                username, password))
     auth.add_password(None,
                       user=username,
                       passwd=password,
@@ -162,7 +164,8 @@ def config(config_values):
         'username': username,
         'password': password,
         'api_urls': api_urls,
-        'opener': opener
+        'opener': opener,
+        'field_length': field_length
     })
 
 
@@ -262,7 +265,7 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
     return metrics
 
 
-def _format_dimensions(dimensions):
+def _format_dimensions(dimensions, field_length=DEFAULT_FIELD_LENGTH):
     """
     Formats a dictionary of dimensions to a format that enables them to be
     specified as key, value pairs in plugin_instance to signalfx. E.g.
@@ -301,7 +304,9 @@ def _post_metrics(metrics, module_config):
         datapoint.type = DEFAULT_METRIC_TYPE
         datapoint.type_instance = metric.name
         datapoint.plugin = PLUGIN_NAME
-        datapoint.plugin_instance = _format_dimensions(metric.dimensions)
+        datapoint.plugin_instance = _format_dimensions(metric.dimensions,
+                                                       module_config[
+                                                           'field_length'])
         datapoint.values = (metric.value,)
         pprint_dict = {
             'plugin': datapoint.plugin,

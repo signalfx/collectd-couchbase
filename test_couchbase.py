@@ -87,6 +87,7 @@ mock_config_nodes.children = [
     ConfigOption('Port', ('8091',)),
     ConfigOption('CollectMode', ('detailed',)),
     ConfigOption('Interval', ('10',)),
+    ConfigOption('FieldLength', ('1024',)),
 ]
 
 mock_config_bucket = mock.Mock()
@@ -99,6 +100,19 @@ mock_config_bucket.children = [
     ConfigOption('CollectBucket', ('default',)),
     ConfigOption('CollectMode', ('detailed',)),
     ConfigOption('Interval', ('10',)),
+]
+
+mock_config_field_length = mock.Mock()
+mock_config_field_length.children = [
+    ConfigOption('CollectTarget', ('BUCKET',)),
+    ConfigOption('Host', ('localhost',)),
+    ConfigOption('Port', ('8091',)),
+    ConfigOption('Username', ('username',)),
+    ConfigOption('Password', ('password',)),
+    ConfigOption('CollectBucket', ('default',)),
+    ConfigOption('CollectMode', ('detailed',)),
+    ConfigOption('Interval', ('10',)),
+    ConfigOption('FieldLength', ('1024',)),
 ]
 
 
@@ -139,6 +153,26 @@ def test_config_bucket():
 
     assert couchbase.CONFIGS[0]['api_urls']['bucket'] is not None
     assert couchbase.CONFIGS[0]['api_urls']['bucket_stat'] is not None
+    couchbase.CONFIGS = []
+
+
+def test_config_field_length():
+    """
+    Check read params from config included bucket configuration
+    """
+
+    couchbase.config(mock_config_field_length)
+    assert couchbase.CONFIGS[0]['plugin_config']['CollectTarget'] == 'BUCKET'
+    assert couchbase.CONFIGS[0]['plugin_config']['Host'] == 'localhost'
+    assert couchbase.CONFIGS[0]['plugin_config']['Port'] == '8091'
+    assert couchbase.CONFIGS[0]['collect_mode'] == 'detailed'
+    assert couchbase.CONFIGS[0]['interval'] == '10'
+    assert couchbase.CONFIGS[0]['collect_bucket'] == 'default'
+    assert couchbase.CONFIGS[0]['username'] == 'username'
+    assert couchbase.CONFIGS[0]['password'] == 'password'
+
+    assert couchbase.CONFIGS[0]['field_length'] == 1024
+
     couchbase.CONFIGS = []
 
 
