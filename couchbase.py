@@ -90,21 +90,21 @@ def config(config_values):
         if val.key in required_keys:
             plugin_config[val.key] = val.values[0]
         # Read optional parameters
-        if val.key in opt_keys and val.key == 'Interval' and val.values[0]:
+        elif val.key in opt_keys and val.key == 'Interval' and val.values[0]:
             interval = val.values[0]
-        if val.key in opt_keys and val.key == 'CollectMode' and val.values[0]:
+        elif val.key in opt_keys and val.key == 'CollectMode' and val.values[0]:
             collect_mode = val.values[0]
         # Read bucket specific parameters
-        if val.key in bucket_specific_keys and val.key == 'CollectBucket' and \
+        elif val.key in bucket_specific_keys and val.key == 'CollectBucket' and \
                 val.values[0]:
             collect_bucket = val.values[0]
-        if val.key in bucket_specific_keys and val.key == 'Username' and \
+        elif val.key in bucket_specific_keys and val.key == 'Username' and \
                 val.values[0]:
             username = val.values[0]
-        if val.key in bucket_specific_keys and val.key == 'Password' and \
+        elif val.key in bucket_specific_keys and val.key == 'Password' and \
                 val.values[0]:
             password = val.values[0]
-        if val.key == 'FieldLength' and val.values[0]:
+        elif val.key == 'FieldLength' and val.values[0]:
             field_length = int(val.values[0])
 
     # Make sure all required config settings are present, and log them
@@ -115,6 +115,7 @@ def config(config_values):
             raise ValueError("Missing required config setting: %s" % key)
         collectd.info("%s=%s" % (key, val))
 
+    # If CollectTarget is bucket, make sure collect_bucket is set
     if plugin_config.get("CollectTarget") == TARGET_BUCKET:
         if collect_bucket is None:
             raise ValueError(
@@ -171,7 +172,6 @@ def config(config_values):
 
 def _build_dimensions(collect_target, module_config):
     dimensions = {'hostHasService': 'couchbase', 'cluster': CLUSTER_DEFAULT}
-
     if collect_target == TARGET_BUCKET:
         dimensions['bucket'] = module_config['collect_bucket']
     return dimensions
@@ -192,17 +192,19 @@ def _parse_with_prefix(metric_name_pref, obj, dimensions, module_config):
                     _parse_with_prefix(new_metric_pref, value, dimensions,
                                        module_config))
         else:
-            metrics.append(
-                    _process_metric(metric_name_pref, key, value, dimensions,
-                                    module_config))
+            metric = _process_metric(metric_name_pref, key, value, dimensions,
+                                     module_config)
+            if metric:
+                metrics.append(metric)
     return metrics
 
 
 def _is_metric_name_allowed(metric_name, module_config):
-    allowed_metrics_list = metric_info.metric_default
+    if metric_name in metric_info.metric_default:
+        return True
     if module_config['collect_mode'] == DETAILED_COLLECT_MODE:
-        allowed_metrics_list.extend(metric_info.metric_detailed)
-    return metric_name in allowed_metrics_list
+        return metric_name in metric_info.metric_detailed
+    return False
 
 
 def _process_metric(metric_name_pref, metric_name, value, dimensions,
@@ -216,49 +218,49 @@ def _process_metric(metric_name_pref, metric_name, value, dimensions,
 def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
     metrics = []
     if request_type == REQUEST_TYPE_NODE:
-        for key, obj in obj_to_parse.iteritems():
-            if key == 'storageTotals':
-                metric_name_pref = 'storage'
+        if 'storageTotals' in obj_to_parse:
+            value = obj_to_parse['storageTotals']
+            metric_name_pref = 'storage'
+            metrics.extend(
+                    _parse_with_prefix(metric_name_pref, value, dimensions,
+                                       module_config))
+        if 'nodes' in obj_to_parse:
+            value = obj_to_parse['nodes']
+            metric_name_pref = 'nodes'
+            for node in value:
+                node_dim = dict(dimensions)
+                node_dim['node'] = node.get('hostname')
                 metrics.extend(
-                        _parse_with_prefix(metric_name_pref, obj, dimensions,
+                        _parse_with_prefix(metric_name_pref, node,
+                                           node_dim,
                                            module_config))
-            if key == 'nodes':
-                metric_name_pref = 'nodes'
-                for node in obj:
-                    node_dim = dict(dimensions)
-                    host = node.get('hostname')
-                    node_dim['node'] = host
-                    metrics.extend(
-                            _parse_with_prefix(metric_name_pref, node,
-                                               node_dim,
-                                               module_config))
     elif request_type == REQUEST_TYPE_BUCKET:
-        for key, value in obj_to_parse.iteritems():
-            if key == 'quota':
-                metric_name_pref = 'bucket.quota'
-                metrics.extend(
-                        _parse_with_prefix(metric_name_pref, value, dimensions,
-                                           module_config))
-            if key == 'basicStats':
-                metric_name_pref = 'bucket.basic'
-                metrics.extend(
-                        _parse_with_prefix(metric_name_pref, value, dimensions,
-                                           module_config))
+        if 'quota' in obj_to_parse:
+            value = obj_to_parse['quota']
+            metric_name_pref = 'bucket.quota'
+            metrics.extend(
+                    _parse_with_prefix(metric_name_pref, value, dimensions,
+                                       module_config))
+        if 'basicStats' in obj_to_parse:
+            value = obj_to_parse['basicStats']
+            metric_name_pref = 'bucket.basic'
+            metrics.extend(
+                    _parse_with_prefix(metric_name_pref, value, dimensions,
+                                       module_config))
     elif request_type == REQUEST_TYPE_BUCKET_STAT:
-        for key, value in obj_to_parse.iteritems():
-            if key == 'op':
-                samples = value.get('samples')
-                metric_name_pref = 'bucket.op'
-                for key_sample, value_sample in samples.iteritems():
-                    if isinstance(value_sample, list):
-                        metric_value = value_sample[-1]
-                        metrics.append(
-                                _process_metric(metric_name_pref, key_sample,
-                                                metric_value, dimensions,
-                                                module_config))
-                break
+        if 'op' in obj_to_parse:
+            value = obj_to_parse['op']
+            samples = value.get('samples')
+            metric_name_pref = 'bucket.op'
+            for key_sample, value_sample in samples.iteritems():
+                if isinstance(value_sample, list):
+                    metric_value = value_sample[-1]
+                    metric = _process_metric(metric_name_pref, key_sample,
+                                             metric_value, dimensions,
+                                             module_config)
+                    if metric:
+                        metrics.append(metric)
 
-    metrics = filter(lambda x: x is not None, metrics)
     collectd.info("End parsing: " + str(len(metrics)))
     for metric in metrics:
         collectd.info(str(metric))
@@ -326,7 +328,7 @@ def read():
     """
     for module_config in CONFIGS:
         for request_type in module_config['api_urls']:
-            collectd.info("Request type " + request_type + " for responce: " +
+            collectd.info("Request type " + request_type + " for response: " +
                           module_config['api_urls'].get(request_type))
             resp_obj = _api_call(module_config['api_urls'].get(request_type),
                                  module_config['opener'])
