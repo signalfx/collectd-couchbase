@@ -121,19 +121,16 @@ def test_config_node():
     Check read params from config
     """
 
-    couchbase.config(mock_config_nodes)
-    assert couchbase.CONFIGS[0]['plugin_config']['CollectTarget'] == 'NODE'
-    assert couchbase.CONFIGS[0]['plugin_config']['Host'] == 'localhost'
-    assert couchbase.CONFIGS[0]['plugin_config']['Port'] == '8091'
-    assert couchbase.CONFIGS[0]['collect_mode'] == 'detailed'
-    assert couchbase.CONFIGS[0]['interval'] == '10'
-    assert couchbase.CONFIGS[0]['collect_bucket'] is None
-    assert couchbase.CONFIGS[0]['username'] == ''
-    assert couchbase.CONFIGS[0]['password'] == ''
-
-    assert couchbase.CONFIGS[0]['api_urls']['node'] is not None
-
-    couchbase.CONFIGS = []
+    module_config = couchbase.config(mock_config_nodes, testing="yes")
+    assert module_config['plugin_config']['CollectTarget'] == 'NODE'
+    assert module_config['plugin_config']['Host'] == 'localhost'
+    assert module_config['plugin_config']['Port'] == '8091'
+    assert module_config['collect_mode'] == 'detailed'
+    assert module_config['interval'] == '10'
+    assert module_config['username'] == ''
+    assert module_config['password'] == ''
+    assert module_config['collect_bucket'] is None
+    assert module_config['api_urls']['node'] is not None
 
 
 def test_config_bucket():
@@ -141,19 +138,17 @@ def test_config_bucket():
     Check read params from config included bucket configuration
     """
 
-    couchbase.config(mock_config_bucket)
-    assert couchbase.CONFIGS[0]['plugin_config']['CollectTarget'] == 'BUCKET'
-    assert couchbase.CONFIGS[0]['plugin_config']['Host'] == 'localhost'
-    assert couchbase.CONFIGS[0]['plugin_config']['Port'] == '8091'
-    assert couchbase.CONFIGS[0]['collect_mode'] == 'detailed'
-    assert couchbase.CONFIGS[0]['interval'] == '10'
-    assert couchbase.CONFIGS[0]['collect_bucket'] == 'default'
-    assert couchbase.CONFIGS[0]['username'] == 'username'
-    assert couchbase.CONFIGS[0]['password'] == 'password'
-
-    assert couchbase.CONFIGS[0]['api_urls']['bucket'] is not None
-    assert couchbase.CONFIGS[0]['api_urls']['bucket_stat'] is not None
-    couchbase.CONFIGS = []
+    module_config = couchbase.config(mock_config_bucket, testing="yes")
+    assert module_config['plugin_config']['CollectTarget'] == 'BUCKET'
+    assert module_config['plugin_config']['Host'] == 'localhost'
+    assert module_config['plugin_config']['Port'] == '8091'
+    assert module_config['collect_mode'] == 'detailed'
+    assert module_config['interval'] == '10'
+    assert module_config['collect_bucket'] == 'default'
+    assert module_config['username'] == 'username'
+    assert module_config['password'] == 'password'
+    assert module_config['api_urls']['bucket'] is not None
+    assert module_config['api_urls']['bucket_stat'] is not None
 
 
 def test_config_field_length():
@@ -161,19 +156,16 @@ def test_config_field_length():
     Check read params from config included bucket configuration
     """
 
-    couchbase.config(mock_config_field_length)
-    assert couchbase.CONFIGS[0]['plugin_config']['CollectTarget'] == 'BUCKET'
-    assert couchbase.CONFIGS[0]['plugin_config']['Host'] == 'localhost'
-    assert couchbase.CONFIGS[0]['plugin_config']['Port'] == '8091'
-    assert couchbase.CONFIGS[0]['collect_mode'] == 'detailed'
-    assert couchbase.CONFIGS[0]['interval'] == '10'
-    assert couchbase.CONFIGS[0]['collect_bucket'] == 'default'
-    assert couchbase.CONFIGS[0]['username'] == 'username'
-    assert couchbase.CONFIGS[0]['password'] == 'password'
-
-    assert couchbase.CONFIGS[0]['field_length'] == 1024
-
-    couchbase.CONFIGS = []
+    module_config = couchbase.config(mock_config_field_length, testing="yes")
+    assert module_config['plugin_config']['CollectTarget'] == 'BUCKET'
+    assert module_config['plugin_config']['Host'] == 'localhost'
+    assert module_config['plugin_config']['Port'] == '8091'
+    assert module_config['collect_mode'] == 'detailed'
+    assert module_config['interval'] == '10'
+    assert module_config['collect_bucket'] == 'default'
+    assert module_config['username'] == 'username'
+    assert module_config['password'] == 'password'
+    assert module_config['field_length'] == 1024
 
 
 def test_config_nodes_fail():
@@ -213,6 +205,5 @@ def test_read():
     Tests the read() method of the collectd plugin. This codepath exercises
     most of the code in the plugin.
     """
-    couchbase.config(mock_config_nodes)
-    couchbase.config(mock_config_bucket)
-    couchbase.read()
+    couchbase.read(couchbase.config(mock_config_nodes, testing="yes"))
+    couchbase.read(couchbase.config(mock_config_bucket, testing="yes"))
