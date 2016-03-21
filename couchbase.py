@@ -27,9 +27,6 @@ REQUEST_TYPE_BUCKET_STAT = "bucket_stat"
 # These are determined by the plugin config settings and are set by config()
 http_timeout = DEFAULT_API_TIMEOUT
 
-CONFIGS = []
-
-
 class Metric:
     def __init__(self, name, value, dimensions=None):
         self.name = name
@@ -65,13 +62,13 @@ def _api_call(url, opener):
         return None
 
 
-def config(config_values):
+def config(config_values, testing="no"):
     """
     Loads information from the Couchbase collectd plugin config file.
     Args:
     :param config_values: Object containing config values
+    :param testing: Used by test script to test the plugin
     """
-    global CONFIGS
 
     plugin_config = {}
     interval = DEFAULT_INTERVAL
@@ -157,7 +154,7 @@ def config(config_values):
         val = api_urls.get(key)
         collectd.info("%s=%s" % (key, val))
 
-    CONFIGS.append({
+    module_config = {
         'plugin_config': plugin_config,
         'interval': interval,
         'collect_mode': collect_mode,
@@ -167,7 +164,22 @@ def config(config_values):
         'api_urls': api_urls,
         'opener': opener,
         'field_length': field_length
-    })
+    }
+
+    if testing == "yes":
+        # for testing purposes
+        return module_config
+    else:
+        # register read callbacks
+        if plugin_config['CollectTarget'] == TARGET_NODE:
+            collectd.register_read(read, interval, data=module_config,
+                                   name="node-"+plugin_config['Host']+
+                                        plugin_config['Port'])
+        else:
+            collectd.register_read(read, interval, data=module_config,
+                                   name="bucket-"+str(collect_bucket))
+
+
 
 
 def _build_dimensions(collect_target, module_config):
@@ -261,9 +273,9 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
                     if metric:
                         metrics.append(metric)
 
-    collectd.info("End parsing: " + str(len(metrics)))
+    collectd.debug("End parsing: " + str(len(metrics)))
     for metric in metrics:
-        collectd.info(str(metric))
+        collectd.debug(str(metric))
     return metrics
 
 
@@ -321,33 +333,33 @@ def _post_metrics(metrics, module_config):
         collectd.debug(pprint.pformat(pprint_dict))
         datapoint.dispatch()
 
-
-def read():
+def read(module_config):
     """
     Makes API calls to Couchbase and records metrics to collectd.
     """
-    for module_config in CONFIGS:
-        for request_type in module_config['api_urls']:
-            collectd.info("Request type " + request_type + " for response: " +
-                          module_config['api_urls'].get(request_type))
-            resp_obj = _api_call(module_config['api_urls'].get(request_type),
-                                 module_config['opener'])
-            if resp_obj is None:
-                continue
+    collectd.debug("Read callback called!")
+    for request_type in module_config['api_urls']:
+        collectd.info("Request type " + request_type + " for response: " +
+                      module_config['api_urls'].get(request_type))
+        resp_obj = _api_call(module_config['api_urls'].get(request_type),
+                             module_config['opener'])
+        if resp_obj is None:
+            continue
 
-            # 1. Prepare dimensions list
-            collect_target = module_config['plugin_config'].get(
-                    'CollectTarget')
-            dimensions = _build_dimensions(collect_target, module_config)
-            collectd.debug("Using dimensions:")
-            collectd.debug(pprint.pformat(dimensions))
+        # 1. Prepare dimensions list
+        collect_target = module_config['plugin_config'].get(
+                'CollectTarget')
+        dimensions = _build_dimensions(collect_target, module_config)
+        collectd.debug("Using dimensions:")
+        collectd.debug(pprint.pformat(dimensions))
 
-            # 2. Parse metrics
-            metrics = _parse_metrics(resp_obj, dimensions, request_type,
-                                     module_config)
+        # 2. Parse metrics
+        metrics = _parse_metrics(resp_obj, dimensions, request_type,
+                                 module_config)
 
-            # 3. Post metrics
-            _post_metrics(metrics, module_config)
+        collectd.debug('Interval: '+str(module_config['interval']))
+        # 3. Post metrics
+        _post_metrics(metrics, module_config)
 
 
 def init():
@@ -368,9 +380,8 @@ def setup_collectd():
     """
     Registers callback functions with collectd
     """
-    collectd.register_config(config)
     collectd.register_init(init)
-    collectd.register_read(read)
+    collectd.register_config(config)
     collectd.register_shutdown(shutdown)
 
 
