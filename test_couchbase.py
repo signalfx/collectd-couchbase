@@ -43,8 +43,14 @@ def mock_api_call(url, opener):
     if parsed_url[-2] == 'buckets' and parsed_url[-1] == 'default':
         key = 'bucket'
 
+    if parsed_url[-1] == 'nodes':
+        key = 'nodes'
+
     if parsed_url[-1] == 'stats':
-        key = 'bucket_stat'
+        node = parsed_url[-2]
+        node = node.replace('.', '_')
+        node = node.replace('%3A', '_')
+        key = 'bucket_stat_'+node
 
     return getattr(sample_responses, key)
 

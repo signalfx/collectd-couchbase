@@ -7,6 +7,7 @@ import urllib2
 
 import collectd
 import metric_info
+import re
 
 # Global constants
 DEFAULT_API_TIMEOUT = 60  # Seconds to wait for the Couchbase API to respond
@@ -120,7 +121,7 @@ def config(config_values, testing="no"):
         collectd.info("%s=%s" % ('CollectBucket', collect_bucket))
 
     # Populate the API URLs now that we have the config
-    base_url = ("http://%s:%s/pools" %
+    base_url = ("http://%s:%s" %
                 (plugin_config['Host'], plugin_config['Port']))
 
     auth = urllib2.HTTPPasswordMgrWithDefaultRealm()
@@ -137,14 +138,11 @@ def config(config_values, testing="no"):
     opener = urllib2.build_opener(handler)
 
     if plugin_config.get('CollectTarget') == TARGET_NODE:
-        url = "%s/%s" % (base_url, 'default')
+        url = "%s/%s" % (base_url, 'pools/default')
         api_urls[REQUEST_TYPE_NODE] = url
     elif plugin_config.get('CollectTarget') == TARGET_BUCKET:
-        url = "%s/%s" % (base_url, 'default/buckets/' + collect_bucket)
+        url = "%s/%s" % (base_url, 'pools/default/buckets/' + collect_bucket)
         api_urls[REQUEST_TYPE_BUCKET] = url
-        url = "%s/%s" % (
-            base_url, 'default/buckets/' + collect_bucket + "/stats")
-        api_urls[REQUEST_TYPE_BUCKET_STAT] = url
     else:
         raise ValueError("Unsupported CollectTarget value: %s" %
                          plugin_config.get('CollectTarget'))
@@ -163,7 +161,8 @@ def config(config_values, testing="no"):
         'password': password,
         'api_urls': api_urls,
         'opener': opener,
-        'field_length': field_length
+        'field_length': field_length,
+        'base_url': base_url
     }
 
     if testing == "yes":
@@ -178,8 +177,6 @@ def config(config_values, testing="no"):
         else:
             collectd.register_read(read, interval, data=module_config,
                                    name="bucket-"+str(collect_bucket))
-
-
 
 
 def _build_dimensions(collect_target, module_config):
@@ -333,16 +330,36 @@ def _post_metrics(metrics, module_config):
         collectd.debug(pprint.pformat(pprint_dict))
         datapoint.dispatch()
 
-def read(module_config):
+
+def read_bucket_stats(request_type, module_config):
+    # Get bucket-node stats urls
+    api_url = module_config['api_urls'].get(request_type)
+    api_url = "%s/%s" % (api_url, 'nodes')
+    resp_obj = _api_call(api_url, module_config['opener'])
+    if resp_obj:
+        api_urls = {}
+        for server in resp_obj['servers']:
+            uri = server['stats']['uri']
+            url = "%s/%s" % (module_config['base_url'], uri)
+            api_urls[REQUEST_TYPE_BUCKET_STAT +
+                     '('+server['hostname']+')'] = url
+        module_config['api_urls'] = api_urls
+        read(module_config, stats=True)
+
+
+def read(module_config, stats=False):
     """
     Makes API calls to Couchbase and records metrics to collectd.
+    Args:
+    :param module_config : Configuration from the plugin file
+    :param stats : Flag to collect bucket stats.
     """
     collectd.debug("Read callback called!")
     for request_type in module_config['api_urls']:
-        collectd.info("Request type " + request_type + " for response: " +
-                      module_config['api_urls'].get(request_type))
-        resp_obj = _api_call(module_config['api_urls'].get(request_type),
-                             module_config['opener'])
+        api_url = module_config['api_urls'].get(request_type)
+        collectd.debug("Request type " + request_type + " for response: " +
+                       api_url)
+        resp_obj = _api_call(api_url, module_config['opener'])
         if resp_obj is None:
             continue
 
@@ -350,6 +367,13 @@ def read(module_config):
         collect_target = module_config['plugin_config'].get(
                 'CollectTarget')
         dimensions = _build_dimensions(collect_target, module_config)
+
+        # attach node dimension for bucket stats
+        if stats:
+            node = re.search('bucket_stat\((.+?)\)', request_type)
+            dimensions['node'] = node.group(1)
+            request_type = REQUEST_TYPE_BUCKET_STAT
+
         collectd.debug("Using dimensions:")
         collectd.debug(pprint.pformat(dimensions))
 
@@ -360,6 +384,10 @@ def read(module_config):
         collectd.debug('Interval: '+str(module_config['interval']))
         # 3. Post metrics
         _post_metrics(metrics, module_config)
+
+        # if collect_target is bucket, collect stats on node level as well
+        if not stats and collect_target == TARGET_BUCKET:
+            read_bucket_stats(request_type, module_config)
 
 
 def init():
@@ -383,6 +411,5 @@ def setup_collectd():
     collectd.register_init(init)
     collectd.register_config(config)
     collectd.register_shutdown(shutdown)
-
 
 setup_collectd()
