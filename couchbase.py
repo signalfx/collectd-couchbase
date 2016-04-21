@@ -227,22 +227,17 @@ def _process_metric(metric_name_pref, metric_name, value, dimensions,
 def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
     metrics = []
     if request_type == REQUEST_TYPE_NODE:
-        if 'storageTotals' in obj_to_parse:
-            value = obj_to_parse['storageTotals']
-            metric_name_pref = 'storage'
-            metrics.extend(
-                    _parse_with_prefix(metric_name_pref, value, dimensions,
-                                       module_config))
         if 'nodes' in obj_to_parse:
             value = obj_to_parse['nodes']
             metric_name_pref = 'nodes'
             for node in value:
-                node_dim = dict(dimensions)
-                node_dim['node'] = node.get('hostname')
-                metrics.extend(
-                        _parse_with_prefix(metric_name_pref, node,
-                                           node_dim,
-                                           module_config))
+                if 'thisNode' in node and node['thisNode']:
+                    node_dim = dict(dimensions)
+                    node_dim['node'] = node.get('hostname')
+                    metrics.extend(
+                            _parse_with_prefix(metric_name_pref, node,
+                                               node_dim,
+                                               module_config))
     elif request_type == REQUEST_TYPE_BUCKET:
         if 'quota' in obj_to_parse:
             value = obj_to_parse['quota']
