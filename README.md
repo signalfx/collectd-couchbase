@@ -35,6 +35,7 @@ get basics metrics or 'detailed' - get all available metrics. See details in `me
 * CollectBucket - bucket name for retrieving metrics. 
 * FieldLength - Set the number of characters used to encode dimension data. This option should only ever be set if 
 you specifically compiled collectd with a non-default value for DATA_MAX_NAME_LEN in plugin.h
+* ClusterName - Set your couchbase cluster name. Default value is 'default'
 
 The following is an example Collectd configuration for this plugin:
 
@@ -49,6 +50,7 @@ The following is an example Collectd configuration for this plugin:
         Host "localhost"
         Port "8091"
         CollectMode "default"
+        ClusterName "MyCluster1"
         Interval 10
       </Module>
       <Module couchbase>
@@ -60,6 +62,7 @@ The following is an example Collectd configuration for this plugin:
         Interval 10
         CollectMode "default"
         CollectBucket "default"
+        ClusterName "MyCluster1"
       </Module>
     </Plugin>
 ```
