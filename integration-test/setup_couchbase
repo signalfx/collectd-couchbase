@@ -1,0 +1,26 @@
+#!/bin/bash
+
+port=8091
+
+wait_for () {
+    host=$1
+    while ! nc -z $host $port
+    do
+      sleep 0.2
+    done
+}
+
+for host in db1 db2
+do
+  echo -n "Waiting for $host..."
+  wait_for $host
+  echo "up"
+
+  curl -v -X POST http://${host}:8091/pools/default -d memoryQuota=300 -d indexMemoryQuota=300
+  curl -v http://${host}:8091/node/controller/setupServices -d 'services=kv%2Cn1ql%2Cindex'
+  curl -v -X POST http://${host}:8091/settings/web -d port=8091 -d username=Administrator -d password=password
+  curl -v -u Administrator:password -X POST http://${host}:8091/sampleBuckets/install -d '["travel-sample"]'
+done
+
+
+exec /.docker/run.sh

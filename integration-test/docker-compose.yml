@@ -1,0 +1,31 @@
+version: '2'
+services:
+  collectd:
+    build:
+      context: ..
+      dockerfile: integration-test/Dockerfile.collectd
+    environment:
+      SF_API_TOKEN: testing
+      SF_INGEST_HOST: fake_sfx
+    depends_on:
+      - fake_sfx
+      - db1
+      - db2
+
+  db1:
+    image: couchbase
+
+  db2:
+    image: couchbase
+
+  fake_sfx:
+    build:
+      context: .
+      dockerfile: Dockerfile.sink
+
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    depends_on:
+      - collectd
