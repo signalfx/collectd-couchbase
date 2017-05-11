@@ -1,2 +1,4 @@
 mock
 collectd
+flake8
+pytest

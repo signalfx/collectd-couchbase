@@ -82,9 +82,10 @@ def config(config_values, testing="no"):
     api_urls = {}
     field_length = DEFAULT_FIELD_LENGTH
     cluster_name = CLUSTER_DEFAULT
+    extra_dimensions = ''
 
     required_keys = ('CollectTarget', 'Host', 'Port')
-    opt_keys = ('Interval', 'CollectMode', 'ClusterName')
+    opt_keys = ('Interval', 'CollectMode', 'ClusterName', 'Dimensions')
     bucket_specific_keys = ('CollectBucket', 'Username', 'Password')
 
     for val in config_values.children:
@@ -111,6 +112,9 @@ def config(config_values, testing="no"):
         elif val.key in opt_keys and val.key == 'ClusterName'\
                 and val.values[0]:
             cluster_name = val.values[0]
+        elif val.key in opt_keys and val.key == 'Dimensions'\
+                and val.values[0]:
+            extra_dimensions = val.values[0]
 
     # Make sure all required config settings are present, and log them
     collectd.info("Using config settings:")
@@ -162,14 +166,15 @@ def config(config_values, testing="no"):
         'opener': opener,
         'field_length': field_length,
         'base_url': base_url,
-        'cluster_name': cluster_name
+        'cluster_name': cluster_name,
+        'extra_dimensions': extra_dimensions,
     }
 
     # Prepare dimensions list
     module_config['dimensions'] = _build_dimensions(module_config)
 
-    collectd.debug("Using dimensions:")
-    collectd.debug(pprint.pformat(module_config['dimensions']))
+    collectd.info("Using dimensions:")
+    collectd.info(pprint.pformat(module_config['dimensions']))
 
     if testing == "yes":
         # for testing purposes
@@ -195,6 +200,21 @@ def _build_dimensions(module_config):
     dimensions = {'hostHasService': 'couchbase', 'cluster': cluster_name}
     if collect_target == TARGET_BUCKET:
         dimensions['bucket'] = module_config['collect_bucket']
+
+    # Go ahead and parse the extra dimension string and add it to the dict of
+    # dimensions
+    if module_config['extra_dimensions']:
+        try:
+            dimensions.update({
+                p[0]: p[1]
+                for p in [t.split('=')
+                          for t in
+                          module_config['extra_dimensions'].split(',')]
+            })
+        except IndexError:
+            collectd.error("Dimensions config option is invalid: %s" %
+                           module_config['extra_dimensions'])
+            raise
     return dimensions
 
 
@@ -469,5 +489,6 @@ def setup_collectd():
     collectd.register_init(init)
     collectd.register_config(config)
     collectd.register_shutdown(shutdown)
+
 
 setup_collectd()
