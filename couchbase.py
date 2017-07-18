@@ -7,6 +7,7 @@ import urllib2
 
 import collectd
 import metric_info
+import numbers
 
 # Global constants
 DEFAULT_API_TIMEOUT = 60  # Seconds to wait for the Couchbase API to respond
