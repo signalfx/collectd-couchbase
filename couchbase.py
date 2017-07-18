@@ -303,6 +303,20 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
                     if metric:
                         metrics.append(metric)
 
+        if 'hot_keys' in obj_to_parse:
+            hot_keys = obj_to_parse['hot_keys']
+            key = 0
+            metric_name_pref = 'bucket.hot_keys'
+            for keys in hot_keys:
+                for name, value in keys.items():
+                    if isinstance(value, numbers.Number):
+                        key += 1
+                        metric = _process_metric(metric_name_pref, str(key),
+                                                 value, dimensions,
+                                                 module_config)
+                        if metric:
+                            metrics.append(metric)
+
     collectd.debug("End parsing: " + str(len(metrics)))
     for metric in metrics:
         collectd.debug(str(metric))
