@@ -352,6 +352,13 @@ def _post_metrics(metrics, module_config):
                                                        module_config[
                                                            'field_length'])
         datapoint.values = (metric.value,)
+
+        # With some versions of CollectD, a dummy metadata map must be added
+        # to each value for it to be correctly serialized to JSON by the
+        # write_http plugin. See
+        # https://github.com/collectd/collectd/issues/716
+        datapoint.meta = {'0': True}
+
         pprint_dict = {
             'plugin': datapoint.plugin,
             'plugin_instance': datapoint.plugin_instance,
