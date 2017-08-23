@@ -309,11 +309,11 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
             key = 0
             metric_name_pref = 'bucket.hot_keys'
             for keys in hot_keys:
-                for name, value in keys.items():
-                    if isinstance(value, numbers.Number):
+                for name, ops in keys.items():
+                    if isinstance(ops, numbers.Number):
                         key += 1
                         metric = _process_metric(metric_name_pref, str(key),
-                                                 value, dimensions,
+                                                 ops, dimensions,
                                                  module_config)
                         if metric:
                             metrics.append(metric)
