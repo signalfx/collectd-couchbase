@@ -142,8 +142,6 @@ def config(config_values, testing="no"):
     auth = urllib2.HTTPPasswordMgrWithDefaultRealm()
     if username is None and password is None:
         username = password = ''
-    collectd.info("Using username '%s' and password '%s' " % (
-        username, password))
     auth.add_password(None,
                       user=username,
                       passwd=password,
