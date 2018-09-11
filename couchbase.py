@@ -183,13 +183,13 @@ def config(config_values, testing="no"):
         collectd.register_read(read_node_stats, interval,
                                data=module_config,
                                name='node_' + plugin_config['Host'] + ':' +
-                                    plugin_config['Port'])
+                                    str(plugin_config['Port']))
     else:
         collectd.register_read(read_bucket_stats, interval,
                                data=module_config,
                                name='bucket_' + collect_bucket + '_' +
                                     plugin_config['Host'] + ':' +
-                                    plugin_config['Port'])
+                                    str(plugin_config['Port']))
 
 
 def _build_dimensions(module_config):
