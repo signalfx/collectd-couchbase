@@ -182,14 +182,16 @@ def config(config_values, testing="no"):
     if plugin_config['CollectTarget'] == TARGET_NODE:
         collectd.register_read(read_node_stats, interval,
                                data=module_config,
-                               name='node_' + plugin_config['Host'] + ':' +
-                                    str(plugin_config['Port']))
+                               name='node_{0}:{1}'.format(
+                                        plugin_config['Host'],
+                                        plugin_config['Port']))
     else:
         collectd.register_read(read_bucket_stats, interval,
                                data=module_config,
-                               name='bucket_' + collect_bucket + '_' +
-                                    plugin_config['Host'] + ':' +
-                                    str(plugin_config['Port']))
+                               name='bucket_{0}_{1}:{2}'.format(
+                                        collect_bucket,
+                                        plugin_config['Host'],
+                                        plugin_config['Port']))
 
 
 def _build_dimensions(module_config):
