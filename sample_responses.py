@@ -502,9 +502,6 @@ bucket_nodes = {
     ]
 }
 
-
-
-
 bucket_stat_10_1_12_33_3000 = {
     "hostname": "10.1.12.33:3000",
     "hot_keys": [],
