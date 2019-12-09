@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import httplib
+import http.client
 import json
 from time import time, sleep
 
@@ -21,7 +21,7 @@ TIMEOUT_SECS = 60
 
 def get_metric_data():
     # Use httplib instead of requests so we don't have to install stuff with pip
-    conn = httplib.HTTPConnection("fake_sfx", 8080)
+    conn = http.client.HTTPConnection("fake_sfx", 8080)
     conn.request("GET", "/")
     resp = conn.getresponse()
     conn.close()
@@ -31,12 +31,12 @@ def get_metric_data():
 def wait_for_metrics_from_each_cluster():
     start = time()
     for host in ['db1', 'db2']:
-        print 'Waiting for metrics from couchbase instance %s...' % (host,)
+        print('Waiting for metrics from couchbase instance %s...' % (host,))
 
         s = SENTINAL_VALUES[host]
         eventually_true(lambda: any([s in m.get('plugin_instance') for m in get_metric_data()]),
                         TIMEOUT_SECS - (time() - start))
-        print 'Found!'
+        print('Found!')
 
 
 def eventually_true(f, timeout_secs):
