@@ -253,3 +253,5 @@ metric_detailed = [
     'bucket.op.couch_spatial_data_size',
     'bucket.op.ep_dcp_xdcr_backoff',
 ]
+
+metric_detailed.extend(['bucket.hot_keys.' + str(i) for i in range(11)])
