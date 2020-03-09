@@ -8,6 +8,7 @@ from six.moves import urllib
 
 import collectd
 import metric_info
+import numbers
 
 # Global constants
 DEFAULT_API_TIMEOUT = 60  # Seconds to wait for the Couchbase API to respond
@@ -273,6 +274,20 @@ def _parse_metrics(obj_to_parse, dimensions, request_type, module_config):
                     metric = _process_metric(metric_name_pref, key_sample, metric_value, dimensions, module_config)
                     if metric:
                         metrics.append(metric)
+
+        if 'hot_keys' in obj_to_parse:
+            hot_keys = obj_to_parse['hot_keys']
+            key = 0
+            metric_name_pref = 'bucket.hot_keys'
+            for keys in hot_keys:
+                for name, ops in keys.items():
+                    if isinstance(ops, numbers.Number):
+                        key += 1
+                        metric = _process_metric(metric_name_pref, str(key),
+                                                 ops, dimensions,
+                                                 module_config)
+                        if metric:
+                            metrics.append(metric)
 
     collectd.debug("End parsing: " + str(len(metrics)))
     for metric in metrics:
