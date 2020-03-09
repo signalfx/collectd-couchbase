@@ -254,4 +254,4 @@ metric_detailed = [
     'bucket.op.ep_dcp_xdcr_backoff',
 ]
 
-metric_detailed.extend(['bucket.hot_keys.'+`i` for i in range(11)])
+metric_detailed.extend(['bucket.hot_keys.' + str(i) for i in range(11)])
